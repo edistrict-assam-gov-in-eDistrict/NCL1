@@ -352,7 +352,7 @@
         </div>
         <br />
 
-        <div class="obc-list" style="font-size: 10.5px; line-height: 1.35">
+        <div class="obc-list" style="font-size: .9.5px; line-height: 1.35">
           <b>(i)</b> Resolution No. 12011/68/93-BCC dated 10/09/93 published in
           the Gazette of India Extraordinary Part I Section I No. 186 dated
           13/09/93 <b>(ii)</b> Resolution No. 12011/94-BCC dated 19/10/94
@@ -619,29 +619,63 @@
             document.body.style.alignItems = prevBodyAlign;
           });
       }
+window.onload = function () {
+  const params = new URLSearchParams(window.location.search);
+  const appId = params.get("appId");
 
-      window.onload = function () {
-        const params = new URLSearchParams(window.location.search);
-        const appId = params.get("appId");
+  const keyMap = {
+    cn: "certNo",
+    an: "appNo",
+    dt: "date",
+    nm: "name",
+    fn: "father",
+    ds: "district",
+    vg: "village",
+    st: "state",
+    cm: "community",
+    af: "assamFamily",
+    cnm: "cscName",
+    cid: "cscId",
+  };
 
-        generateQR();
+  const queryData = Object.fromEntries(
+    Object.entries(keyMap)
+      .map(([param, key]) => [key, params.get(param)])
+      .filter(([, value]) => value !== null)
+  );
 
-        if (appId) {
-          fetch(`../api/get.php?appId=${encodeURIComponent(appId)}`)
-            .then((r) => r.json())
-            .then((data) => {
-              applyData(data);
-              setTimeout(showPDF, 500);
-            })
-            .catch(() => {});
-        } else {
-          const certEl = document.getElementById("certNo");
-          if (certEl) {
-            const val = certEl.innerText.trim();
-            renderBarcode(val.replace(/[^0-9]/g, "") || val);
-          }
+  if (Object.keys(queryData).length > 0) {
+    applyData(queryData);
+  }
+
+  generateQR();
+
+  if (appId) {
+    fetch(`../api/get.php?appId=${encodeURIComponent(appId)}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Unable to fetch saved certificate");
         }
-      };
+        return response.json();
+      })
+      .then((data) => {
+        applyData(data);
+        generateQR();
+        setTimeout(showPDF, 500);
+      })
+      .catch(() => {
+        // Keep the values received in the QR URL.
+      });
+  } else {
+    const certEl = document.getElementById("certNo");
+
+    if (certEl) {
+      const value = certEl.innerText.trim();
+      renderBarcode(value.replace(/[^0-9]/g, "") || value);
+    }
+  }
+};
+      
     </script>
   </body>
 </html>
